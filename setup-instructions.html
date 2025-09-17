@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Required - Space Unicorns Shop</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #1a0033, #330066);
+            color: white;
+            padding: 40px;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+            background: rgba(0, 0, 50, 0.8);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #ff69b4;
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.5);
+            text-align: center;
+        }
+        h1 {
+            color: #ff69b4;
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .step {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            text-align: left;
+        }
+        .step h3 {
+            color: #00ffff;
+            margin-top: 0;
+        }
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            color: #ffff00;
+        }
+        .warning {
+            background: rgba(255, 69, 0, 0.2);
+            border: 2px solid #ff4500;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .success {
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #00ff00;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        a {
+            color: #ff69b4;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦄 Setup Required</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Stripe keys not configured!</strong><br>
+            You need to add your Stripe API keys to use the payment system.
+        </div>
+
+        <div class="step">
+            <h3>1. Get Stripe Keys</h3>
+            <p>Go to <a href="https://dashboard.stripe.com/apikeys" target="_blank">Stripe Dashboard</a> and get your:</p>
+            <ul>
+                <li><strong>Publishable Key</strong> (starts with <code>pk_test_...</code>)</li>
+                <li><strong>Secret Key</strong> (starts with <code>sk_test_...</code>)</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>2. Edit .env File</h3>
+            <p>Open the <code>.env</code> file and replace the placeholder keys:</p>
+            <pre><code>STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_KEY_HERE
+STRIPE_SECRET_KEY=sk_test_YOUR_KEY_HERE</code></pre>
+        </div>
+
+        <div class="step">
+            <h3>3. Restart Server</h3>
+            <p>Stop the server (Ctrl+C) and restart it:</p>
+            <pre><code>npm start</code></pre>
+        </div>
+
+        <div class="success">
+            <strong>✅ Once configured, you'll see the 3D unicorn shop!</strong>
+        </div>
+
+        <p style="margin-top: 30px; font-size: 14px; opacity: 0.7;">
+            Need help? Check the <code>README-STRIPE-SETUP.md</code> file for detailed instructions.
+        </p>
+    </div>
+</body>
+</html>
+
+
