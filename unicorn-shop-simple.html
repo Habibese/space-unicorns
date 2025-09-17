@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Unicorns Shop</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
+            cursor: default;
+        }
+
+        /* Responsive per mobile */
+        @media (max-width: 768px) {
+            #buyButton {
+                bottom: 20px;
+                padding: 12px 25px;
+                font-size: 14px;
+            }
+            
+            .modal-content {
+                width: 95vw;
+                padding: 20px;
+            }
+            
+            .modal-content h2 {
+                font-size: 20px;
+            }
+            
+            .color-selection {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .color-item {
+                padding: 8px;
+            }
+            
+            .color-display {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .modal-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .btn-buy {
+                min-width: auto;
+                max-width: none;
+                font-size: 12px;
+            }
+            
+            .btn-cancel {
+                flex: 0 0 auto;
+                min-width: auto;
+            }
+            
+        /* Controlli navigazione responsive */
+        #navigationControls {
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            gap: 3px;
+        }
+        
+        .nav-btn {
+            width: 35px;
+            height: 35px;
+            font-size: 16px;
+        }
+        
+        /* Nascondi controlli su desktop */
+        @media (min-width: 769px) {
+            #navigationControls {
+                display: none;
+            }
+        }
+        }
+
+        /* Controlli Navigazione */
+        #navigationControls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-btn.pressed {
+            background: rgba(255, 255, 255, 0.4) !important;
+            border-color: rgba(255, 255, 255, 0.7);
+            transform: scale(0.95);
+        }
+
+        /* Bottone acquisto */
+        #buyButton {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: linear-gradient(45deg, #ff69b4, #ff1493);
+            color: white;
+            border: 2px solid #ff69b4;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: normal;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: none;
+            letter-spacing: normal;
+            box-shadow: 0 0 15px rgba(255, 105, 180, 0.4);
+        }
+
+        #buyButton:hover {
+            background: linear-gradient(45deg, #ff1493, #ff69b4);
+            border-color: #ff1493;
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        /* Modal */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a0033, #330066);
+            padding: 30px;
+            border: 4px solid #ff69b4;
+            border-radius: 20px;
+            width: 400px;
+            max-width: 90vw;
+            color: white;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(255, 105, 180, 0.5);
+        }
+
+        .modal-content h2 {
+            color: #ff69b4;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            color: #ffb3d9;
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        #unicornName {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ff69b4;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        #unicornName:focus {
+            outline: none;
+            border-color: #ff1493;
+            box-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
+        }
+
+        .color-selection {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .color-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .color-item:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .color-display {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 auto 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .color-name {
+            font-size: 12px;
+            color: #ffb3d9;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .qty-btn {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #ff69b4;
+            background: rgba(255, 105, 180, 0.2);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .qty-btn:hover {
+            background: rgba(255, 105, 180, 0.4);
+            transform: scale(1.1);
+        }
+
+        .qty-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quantity {
+            min-width: 20px;
+            font-weight: bold;
+            color: white;
+            font-size: 14px;
+        }
+
+        .modal-buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: stretch;
+            flex-wrap: nowrap;
+        }
+
+        .modal-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            white-space: nowrap;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .btn-buy {
+            background: linear-gradient(45deg, #ff69b4, #ff1493);
+            color: white;
+            flex: 1 1 200px;
+            max-width: 280px;
+            min-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-buy:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
+        }
+
+        .btn-cancel {
+            background: #666;
+            color: white;
+            flex: 0 0 80px;
+            min-width: 80px;
+            max-width: 80px;
+        }
+
+        .btn-cancel:hover {
+            background: #888;
+        }
+
+        /* Animazioni */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes glow {
+            0% { text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5), 0 0 5px #00ff00; }
+            100% { text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5), 0 0 15px #00ff00; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Controlli Navigazione -->
+    <div id="navigationControls">
+        <div class="nav-row nav-top">
+            <button class="nav-btn" id="nav-up" title="Move Up">↑</button>
+        </div>
+        <div class="nav-row nav-middle">
+            <button class="nav-btn" id="nav-left" title="Move Left">←</button>
+            <button class="nav-btn" id="nav-center" title="Return to Center">⌂</button>
+            <button class="nav-btn" id="nav-right" title="Move Right">→</button>
+        </div>
+        <div class="nav-row nav-bottom">
+            <button class="nav-btn" id="nav-down" title="Move Down">↓</button>
+        </div>
+        <div class="nav-row nav-depth">
+            <button class="nav-btn" id="nav-forward" title="Move Forward">+</button>
+            <button class="nav-btn" id="nav-backward" title="Move Backward">-</button>
+        </div>
+    </div>
+
+    <!-- Bottone Acquisto -->
+    <button id="buyButton">BUY UNICORN</button>
+
+    <!-- Modal Acquisto -->
+    <div id="modal">
+        <div class="modal-content">
+            <h2>Buy Your Unicorn</h2>
+            
+            <div class="form-group">
+                <label for="unicornName">Unicorn Name:</label>
+                <input type="text" id="unicornName" placeholder="e.g. Sparkles, Rainbow, Cosmic..." maxlength="20">
+            </div>
+
+            <div class="form-group">
+                <label>Choose Colors and Quantities:</label>
+                <div class="color-selection">
+                    <div class="color-item" data-color="0">
+                        <div class="color-display" style="background: #ff69b4;"></div>
+                        <div class="color-name">Pink</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(0, -1)">-</button>
+                            <span class="quantity" id="qty-0">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(0, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="1">
+                        <div class="color-display" style="background: #00ffff;"></div>
+                        <div class="color-name">Cyan</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(1, -1)">-</button>
+                            <span class="quantity" id="qty-1">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(1, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="2">
+                        <div class="color-display" style="background: #ff00ff;"></div>
+                        <div class="color-name">Magenta</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(2, -1)">-</button>
+                            <span class="quantity" id="qty-2">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(2, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="3">
+                        <div class="color-display" style="background: #ffff00;"></div>
+                        <div class="color-name">Yellow</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(3, -1)">-</button>
+                            <span class="quantity" id="qty-3">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(3, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="4">
+                        <div class="color-display" style="background: #00ff00;"></div>
+                        <div class="color-name">Green</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(4, -1)">-</button>
+                            <span class="quantity" id="qty-4">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(4, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="5">
+                        <div class="color-display" style="background: #ff4500;"></div>
+                        <div class="color-name">Orange</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(5, -1)">-</button>
+                            <span class="quantity" id="qty-5">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(5, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="6">
+                        <div class="color-display" style="background: #8a2be2;"></div>
+                        <div class="color-name">Purple</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(6, -1)">-</button>
+                            <span class="quantity" id="qty-6">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(6, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="7">
+                        <div class="color-display" style="background: #ff1493;"></div>
+                        <div class="color-name">Deep Pink</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(7, -1)">-</button>
+                            <span class="quantity" id="qty-7">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(7, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="8">
+                        <div class="color-display" style="background: #00bfff;"></div>
+                        <div class="color-name">Sky Blue</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(8, -1)">-</button>
+                            <span class="quantity" id="qty-8">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(8, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="9">
+                        <div class="color-display" style="background: #32cd32;"></div>
+                        <div class="color-name">Lime</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(9, -1)">-</button>
+                            <span class="quantity" id="qty-9">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(9, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="10">
+                        <div class="color-display" style="background: #ffd700;"></div>
+                        <div class="color-name">Gold</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(10, -1)">-</button>
+                            <span class="quantity" id="qty-10">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(10, 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="color-item" data-color="11">
+                        <div class="color-display" style="background: #ff6347;"></div>
+                        <div class="color-name">Tomato</div>
+                        <div class="quantity-controls">
+                            <button type="button" class="qty-btn minus" onclick="changeQuantity(11, -1)">-</button>
+                            <span class="quantity" id="qty-11">0</span>
+                            <button type="button" class="qty-btn plus" onclick="changeQuantity(11, 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Form -->
+            <div class="form-group">
+                <label>Payment Details:</label>
+                <div id="card-element" style="padding: 12px; border: 2px solid #ff69b4; border-radius: 10px; background: rgba(255,255,255,0.1); margin-top: 8px;">
+                    <!-- Stripe Elements will create form elements here -->
+                </div>
+                <div id="card-errors" role="alert" style="color: #ff4444; margin-top: 8px; font-size: 14px;"></div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-btn btn-buy" id="submit-payment">BUY FOR $0.25</button>
+                <button class="modal-btn btn-cancel" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variabili globali
+        let scene, camera, renderer, mainUnicorn, stars = [], particles = [];
+        let time = 0;
+        let unicornColor = 0;
+        const colors = [0xff69b4, 0x00ffff, 0xff00ff, 0xffff00, 0x00ff00, 0xff4500, 0x8a2be2, 0xff1493, 0x00bfff, 0x32cd32, 0xffd700, 0xff6347];
+        const colorNames = ['Pink', 'Cyan', 'Magenta', 'Yellow', 'Green', 'Orange', 'Purple', 'Deep Pink', 'Sky Blue', 'Lime', 'Gold', 'Tomato'];
+        
+        // Collezione unicorni
+        let ownedUnicorns = [];
+        let unicornCounter = 0;
+        
+        // Quantità per colore (array di 12 elementi, uno per ogni colore)
+        let colorQuantities = new Array(12).fill(0);
+        
+        // Posizioni occupate per evitare sovrapposizioni
+        let occupiedPositions = [];
+        
+        // Controlli camera - adattati per spazio gigante
+        let cameraDistance = 50; // Distanza iniziale maggiore
+        let cameraAngleX = 0;
+        let cameraAngleY = 0;
+        let isMouseDown = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        // Touch per mobile
+        let lastTouchDistance = 0;
+        
+        // Camera target e animazione
+        let cameraTarget = { x: 0, y: 0, z: 0 };
+        let isAnimatingCamera = false;
+        
+        // Movimento continuo
+        let movementKeys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            forward: false,
+            backward: false
+        };
+        let movementSpeed = 0.5; // Velocità movimento continuo
+        
+        // Stripe
+        let stripe;
+        let elements;
+        let cardElement;
+        let unicornPrice = 25; // Default fallback
+        let userSessionId = localStorage.getItem('unicorn_session_id') || generateSessionId();
+
+        function init() {
+            console.log('Initializing Space Unicorns app...');
+            
+            // Scena
+            scene = new THREE.Scene();
+            
+            // Camera - far plane molto più grande per spazio gigante
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+            updateCameraPosition();
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000011);
+            document.body.appendChild(renderer.domElement);
+            
+            // Unicorno principale
+            createMainUnicorn();
+            
+            // Stelle
+            createStars();
+            
+            // Particelle
+            createParticles();
+            
+            // Luci
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(10, 10, 5);
+            scene.add(directionalLight);
+            
+            // Eventi controlli camera
+            setupCameraControls();
+            window.addEventListener('resize', onWindowResize);
+            
+            // Eventi UI
+            setupUI();
+            
+            // Setup Stripe
+            setupStripe();
+            
+            // Carica unicorni dal database
+            loadUnicornsFromDatabase();
+            
+            // Avvia animazione
+            animate();
+            
+            console.log('Space Unicorns app ready!');
+            
+            // Mostra controlli disponibili
+            setTimeout(() => {
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                    console.log('📱 Mobile Controls: Use the navigation buttons (top-right) to move around');
+                } else {
+                    console.log('⌨️ Desktop Controls: W/A/S/D to move, Q/E for depth, Space to center');
+                }
+                console.log('🖱️ Mouse: Drag to rotate, Scroll to zoom, Click unicorn to focus');
+            }, 2000);
+        }
+
+        function createMainUnicorn() {
+            mainUnicorn = new THREE.Group();
+            
+            // Corpo
+            const bodyGeometry = new THREE.SphereGeometry(1, 8, 6);
+            bodyGeometry.scale(2, 1, 1.5);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: colors[unicornColor],
+                shininess: 100,
+                transparent: true,
+                opacity: 0.9
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            mainUnicorn.add(body);
+            
+            // Testa
+            const headGeometry = new THREE.SphereGeometry(0.8, 8, 6);
+            const headMaterial = new THREE.MeshPhongMaterial({ 
+                color: colors[unicornColor],
+                shininess: 100 
+            });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.set(2.5, 0.5, 0);
+            mainUnicorn.add(head);
+            
+            // Corno
+            const hornGeometry = new THREE.ConeGeometry(0.1, 2, 8);
+            const hornMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffd700,
+                shininess: 200
+            });
+            const horn = new THREE.Mesh(hornGeometry, hornMaterial);
+            horn.position.set(3, 1.5, 0);
+            horn.rotation.z = -Math.PI / 6;
+            mainUnicorn.add(horn);
+            
+            // Ali
+            for (let i = 0; i < 2; i++) {
+                const wingGeometry = new THREE.PlaneGeometry(1.5, 2);
+                const wingMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x87ceeb,
+                    transparent: true,
+                    opacity: 0.8,
+                    side: THREE.DoubleSide
+                });
+                const wing = new THREE.Mesh(wingGeometry, wingMaterial);
+                wing.position.set(0, 1, i === 0 ? 1.2 : -1.2);
+                wing.rotation.x = Math.PI / 6;
+                wing.rotation.z = i === 0 ? -Math.PI / 4 : Math.PI / 4;
+                mainUnicorn.add(wing);
+            }
+            
+            // Gambe
+            for (let i = 0; i < 4; i++) {
+                const legGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.5);
+                const legMaterial = new THREE.MeshPhongMaterial({ color: colors[unicornColor] });
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                leg.position.set(
+                    i < 2 ? 1 : -1,
+                    -1.5,
+                    i % 2 === 0 ? 0.8 : -0.8
+                );
+                mainUnicorn.add(leg);
+            }
+            
+            // Nametag per unicorno principale
+            const demoTag = createNameTag("Demo Unicorn");
+            demoTag.position.set(0, 4, 0);
+            mainUnicorn.add(demoTag);
+            
+            scene.add(mainUnicorn);
+        }
+
+        function createCustomUnicorn(name, colorIndex) {
+            console.log(`Creating unicorn: ${name} (color: ${colorNames[colorIndex]})`);
+            const unicornGroup = new THREE.Group();
+            const color = colors[colorIndex];
+            
+            // Corpo
+            const bodyGeometry = new THREE.SphereGeometry(1, 8, 6);
+            bodyGeometry.scale(2, 1, 1.5);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: color,
+                shininess: 100,
+                transparent: true,
+                opacity: 0.9
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            unicornGroup.add(body);
+            
+            // Testa
+            const headGeometry = new THREE.SphereGeometry(0.8, 8, 6);
+            const headMaterial = new THREE.MeshPhongMaterial({ 
+                color: color,
+                shininess: 100 
+            });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.set(2.5, 0.5, 0);
+            unicornGroup.add(head);
+            
+            // Corno
+            const hornGeometry = new THREE.ConeGeometry(0.1, 2, 8);
+            const hornMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffd700,
+                shininess: 200
+            });
+            const horn = new THREE.Mesh(hornGeometry, hornMaterial);
+            horn.position.set(3, 1.5, 0);
+            horn.rotation.z = -Math.PI / 6;
+            unicornGroup.add(horn);
+            
+            // Ali
+            for (let i = 0; i < 2; i++) {
+                const wingGeometry = new THREE.PlaneGeometry(1.5, 2);
+                const wingMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x87ceeb,
+                    transparent: true,
+                    opacity: 0.8,
+                    side: THREE.DoubleSide
+                });
+                const wing = new THREE.Mesh(wingGeometry, wingMaterial);
+                wing.position.set(0, 1, i === 0 ? 1.2 : -1.2);
+                wing.rotation.x = Math.PI / 6;
+                wing.rotation.z = i === 0 ? -Math.PI / 4 : Math.PI / 4;
+                unicornGroup.add(wing);
+            }
+            
+            // Gambe
+            for (let i = 0; i < 4; i++) {
+                const legGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.5);
+                const legMaterial = new THREE.MeshPhongMaterial({ color: color });
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                leg.position.set(
+                    i < 2 ? 1 : -1,
+                    -1.5,
+                    i % 2 === 0 ? 0.8 : -0.8
+                );
+                unicornGroup.add(leg);
+            }
+            
+            // Crea il nametag
+            const nameTag = createNameTag(name);
+            nameTag.position.set(0, 4, 0);
+            unicornGroup.add(nameTag);
+            
+            // Posizionamento casuale senza sovrapposizioni
+            const randomPos = generateRandomPosition();
+            unicornGroup.position.set(randomPos.x, randomPos.y, randomPos.z);
+            
+            // Rotazione casuale iniziale
+            unicornGroup.rotation.y = Math.random() * Math.PI * 2;
+            
+            // Salva dati
+            const unicornData = {
+                group: unicornGroup,
+                name: name,
+                colorIndex: colorIndex,
+                position: randomPos,
+                initialRotation: unicornGroup.rotation.y,
+                id: unicornCounter
+            };
+            
+            ownedUnicorns.push(unicornData);
+            scene.add(unicornGroup);
+            unicornCounter++;
+            
+            console.log(`Unicorn added! Total: ${ownedUnicorns.length}, Position: x=${unicornGroup.position.x.toFixed(2)}, z=${unicornGroup.position.z.toFixed(2)}`);
+            
+            // Mostra statistiche spazio ogni 10 unicorni
+            if (ownedUnicorns.length % 10 === 0) {
+                getSpaceStats();
+            }
+        }
+
+        function generateRandomPosition() {
+            const minDistance = 6; // Distanza minima ridotta per più densità
+            const maxAttempts = 20; // Meno tentativi per performance
+            let attempts = 0;
+            
+            // Spazio molto più grande per 1 milione di unicorni
+            // Calcola il raggio basato sul numero di unicorni esistenti
+            const baseRadius = 20;
+            const expansionFactor = Math.pow(ownedUnicorns.length + 1, 1/3); // Crescita cubica
+            const maxRadius = baseRadius + (expansionFactor * 15);
+            
+            while (attempts < maxAttempts) {
+                // Genera posizione casuale in uno spazio sferico gigante
+                const radius = baseRadius + Math.random() * maxRadius;
+                const theta = Math.random() * Math.PI * 2; // Angolo orizzontale 0-360°
+                const phi = Math.random() * Math.PI; // Angolo verticale 0-180°
+                
+                const x = radius * Math.sin(phi) * Math.cos(theta);
+                const y = (radius * Math.cos(phi)) + Math.random() * 50 - 25; // Altezza ±25
+                const z = radius * Math.sin(phi) * Math.sin(theta);
+                
+                const newPosition = { x, y, z };
+                
+                // Controllo ottimizzato per grandi quantità
+                let tooClose = false;
+                
+                // Per performance, controlla solo gli ultimi 100 unicorni
+                const recentPositions = occupiedPositions.slice(-100);
+                for (let existingPos of recentPositions) {
+                    const distance = Math.sqrt(
+                        Math.pow(newPosition.x - existingPos.x, 2) +
+                        Math.pow(newPosition.y - existingPos.y, 2) +
+                        Math.pow(newPosition.z - existingPos.z, 2)
+                    );
+                    
+                    if (distance < minDistance) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                
+                if (!tooClose) {
+                    occupiedPositions.push(newPosition);
+                    
+                    // Ottimizzazione memoria: mantieni solo le ultime 1000 posizioni
+                    if (occupiedPositions.length > 1000) {
+                        occupiedPositions = occupiedPositions.slice(-1000);
+                    }
+                    
+                    return newPosition;
+                }
+                
+                attempts++;
+            }
+            
+            // Fallback per spazi molto grandi
+            const fallbackRadius = maxRadius + Math.random() * 100;
+            const fallbackTheta = Math.random() * Math.PI * 2;
+            const fallbackPhi = Math.random() * Math.PI;
+            
+            const fallbackPosition = {
+                x: fallbackRadius * Math.sin(fallbackPhi) * Math.cos(fallbackTheta),
+                y: fallbackRadius * Math.cos(fallbackPhi) + Math.random() * 100 - 50,
+                z: fallbackRadius * Math.sin(fallbackPhi) * Math.sin(fallbackTheta)
+            };
+            
+            occupiedPositions.push(fallbackPosition);
+            
+            // Ottimizzazione memoria
+            if (occupiedPositions.length > 1000) {
+                occupiedPositions = occupiedPositions.slice(-1000);
+            }
+            
+            return fallbackPosition;
+        }
+
+        function clearOccupiedPositions() {
+            // Funzione per pulire le posizioni se necessario (per debug o reset)
+            occupiedPositions = [];
+            console.log('Occupied positions cleared');
+        }
+
+        function getSpaceStats() {
+            const totalUnicorns = ownedUnicorns.length;
+            const expansionFactor = Math.pow(totalUnicorns + 1, 1/3);
+            const currentRadius = 20 + (expansionFactor * 15);
+            const spaceVolume = (4/3) * Math.PI * Math.pow(currentRadius, 3);
+            const density = totalUnicorns / spaceVolume;
+            
+            console.log(`🦄 SPACE STATS:`);
+            console.log(`   Total Unicorns: ${totalUnicorns.toLocaleString()}`);
+            console.log(`   Space Radius: ${currentRadius.toFixed(1)} units`);
+            console.log(`   Space Volume: ${spaceVolume.toLocaleString()} cubic units`);
+            console.log(`   Density: ${(density * 1000).toFixed(4)} unicorns per 1000 cubic units`);
+            console.log(`   Estimated capacity: ~${Math.floor(spaceVolume / 200).toLocaleString()} unicorns`);
+            
+            return { totalUnicorns, currentRadius, spaceVolume, density };
+        }
+
+        function generateSessionId() {
+            const sessionId = 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+            localStorage.setItem('unicorn_session_id', sessionId);
+            return sessionId;
+        }
+
+        async function loadUnicornsFromDatabase() {
+            try {
+                console.log('🗄️ Loading unicorns from database...');
+                
+                // Load all unicorns (for global view) or user-specific unicorns
+                const response = await fetch('/unicorns');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const dbUnicorns = await response.json();
+                
+                console.log(`📊 Found ${dbUnicorns.length} unicorns in database`);
+                
+                // Convert database unicorns to 3D objects
+                for (const dbUnicorn of dbUnicorns) {
+                    const colorIndex = colorNames.indexOf(dbUnicorn.color_name);
+                    if (colorIndex !== -1) {
+                        createUnicornFromDatabase(dbUnicorn, colorIndex);
+                    }
+                }
+                
+                console.log(`✅ Loaded ${ownedUnicorns.length} unicorns into 3D space`);
+                console.log(`📍 Occupied positions: ${occupiedPositions.length}`);
+                
+                // Update space stats
+                if (ownedUnicorns.length > 0) {
+                    getSpaceStats();
+                }
+                
+                // Verifica che le posizioni siano state caricate correttamente
+                if (ownedUnicorns.length !== occupiedPositions.length) {
+                    console.warn('⚠️ Mismatch between unicorns and positions - this may cause overlaps');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading unicorns from database:', error);
+                
+                if (error.message.includes('Failed to fetch')) {
+                    console.error('🔌 Server connection failed - make sure the server is running with "npm start"');
+                } else if (error.message.includes('HTTP 500')) {
+                    console.error('🗄️ Database error on server - check server logs');
+                } else {
+                    console.error('🤷 Unknown error loading unicorns');
+                }
+                
+                // Fallback: continua senza unicorni dal database
+                console.log('🎮 Continuing without database unicorns - you can still buy new ones');
+            }
+        }
+
+        function createUnicornFromDatabase(dbUnicorn, colorIndex) {
+            const unicornGroup = new THREE.Group();
+            const color = colors[colorIndex];
+            
+            // Corpo
+            const bodyGeometry = new THREE.SphereGeometry(1, 8, 6);
+            bodyGeometry.scale(2, 1, 1.5);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: color,
+                shininess: 100,
+                transparent: true,
+                opacity: 0.9
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            unicornGroup.add(body);
+            
+            // Testa
+            const headGeometry = new THREE.SphereGeometry(0.8, 8, 6);
+            const headMaterial = new THREE.MeshPhongMaterial({ 
+                color: color,
+                shininess: 100 
+            });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.set(2.5, 0.5, 0);
+            unicornGroup.add(head);
+            
+            // Corno
+            const hornGeometry = new THREE.ConeGeometry(0.1, 2, 8);
+            const hornMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffd700,
+                shininess: 200
+            });
+            const horn = new THREE.Mesh(hornGeometry, hornMaterial);
+            horn.position.set(3, 1.5, 0);
+            horn.rotation.z = -Math.PI / 6;
+            unicornGroup.add(horn);
+            
+            // Ali
+            for (let i = 0; i < 2; i++) {
+                const wingGeometry = new THREE.PlaneGeometry(1.5, 2);
+                const wingMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x87ceeb,
+                    transparent: true,
+                    opacity: 0.8,
+                    side: THREE.DoubleSide
+                });
+                const wing = new THREE.Mesh(wingGeometry, wingMaterial);
+                wing.position.set(0, 1, i === 0 ? 1.2 : -1.2);
+                wing.rotation.x = Math.PI / 6;
+                wing.rotation.z = i === 0 ? -Math.PI / 4 : Math.PI / 4;
+                unicornGroup.add(wing);
+            }
+            
+            // Gambe
+            for (let i = 0; i < 4; i++) {
+                const legGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.5);
+                const legMaterial = new THREE.MeshPhongMaterial({ color: color });
+                const leg = new THREE.Mesh(legGeometry, legMaterial);
+                leg.position.set(
+                    i < 2 ? 1 : -1,
+                    -1.5,
+                    i % 2 === 0 ? 0.8 : -0.8
+                );
+                unicornGroup.add(leg);
+            }
+            
+            // Nametag
+            const nameTag = createNameTag(dbUnicorn.name);
+            nameTag.position.set(0, 4, 0);
+            unicornGroup.add(nameTag);
+            
+            // Usa posizione dal database
+            unicornGroup.position.set(
+                dbUnicorn.position_x,
+                dbUnicorn.position_y,
+                dbUnicorn.position_z
+            );
+            unicornGroup.rotation.y = dbUnicorn.initial_rotation;
+            
+            // Salva dati
+            const unicornData = {
+                group: unicornGroup,
+                name: dbUnicorn.name,
+                colorIndex: colorIndex,
+                position: {
+                    x: dbUnicorn.position_x,
+                    y: dbUnicorn.position_y,
+                    z: dbUnicorn.position_z
+                },
+                initialRotation: dbUnicorn.initial_rotation,
+                id: dbUnicorn.id,
+                fromDatabase: true
+            };
+            
+            ownedUnicorns.push(unicornData);
+            scene.add(unicornGroup);
+            
+            // Aggiungi la posizione alle posizioni occupate
+            occupiedPositions.push({
+                x: dbUnicorn.position_x,
+                y: dbUnicorn.position_y,
+                z: dbUnicorn.position_z
+            });
+            
+            // Aggiorna il counter per nuovi unicorni
+            if (ownedUnicorns.length > unicornCounter) {
+                unicornCounter = ownedUnicorns.length;
+            }
+        }
+
+        function createNameTag(name) {
+            // Crea una canvas per il testo
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 512;
+            canvas.height = 128;
+            
+            // Stile del testo
+            context.fillStyle = 'rgba(0, 0, 50, 0.8)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Bordo
+            context.strokeStyle = '#ff69b4';
+            context.lineWidth = 4;
+            context.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+            
+            // Testo
+            context.fillStyle = '#ffffff';
+            context.font = 'bold 48px Comic Sans MS, cursive';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(name, canvas.width / 2, canvas.height / 2);
+            
+            // Ombra del testo
+            context.fillStyle = '#ff69b4';
+            context.font = 'bold 48px Comic Sans MS, cursive';
+            context.fillText(name, canvas.width / 2 + 2, canvas.height / 2 + 2);
+            
+            // Testo principale
+            context.fillStyle = '#ffffff';
+            context.fillText(name, canvas.width / 2, canvas.height / 2);
+            
+            // Crea la texture dal canvas
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.MeshBasicMaterial({ 
+                map: texture,
+                transparent: true,
+                opacity: 0.9,
+                side: THREE.DoubleSide
+            });
+            
+            const geometry = new THREE.PlaneGeometry(4, 1);
+            const nameTagMesh = new THREE.Mesh(geometry, material);
+            
+            return nameTagMesh;
+        }
+
+        function createStars() {
+            // Più stelle per riempire lo spazio gigante
+            for (let i = 0; i < 2000; i++) {
+                const starGeometry = new THREE.SphereGeometry(0.2, 4, 4);
+                const starMaterial = new THREE.MeshBasicMaterial({ 
+                    color: Math.random() > 0.7 ? 0xffffff : 0xffffaa
+                });
+                const star = new THREE.Mesh(starGeometry, starMaterial);
+                
+                // Stelle distribuite in uno spazio molto più grande
+                star.position.set(
+                    (Math.random() - 0.5) * 2000, // Spazio 2000x2000x2000
+                    (Math.random() - 0.5) * 2000,
+                    (Math.random() - 0.5) * 2000
+                );
+                
+                stars.push(star);
+                scene.add(star);
+            }
+        }
+
+        function createParticles() {
+            for (let i = 0; i < 100; i++) {
+                const particleGeometry = new THREE.SphereGeometry(0.05, 4, 4);
+                const particleMaterial = new THREE.MeshBasicMaterial({ 
+                    color: new THREE.Color().setHSL(Math.random(), 1, 0.8),
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                
+                particle.userData = {
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.02,
+                        (Math.random() - 0.5) * 0.02,
+                        (Math.random() - 0.5) * 0.02
+                    ),
+                    life: Math.random() * 100
+                };
+                
+                particles.push(particle);
+                scene.add(particle);
+            }
+        }
+
+        function updateCameraPosition() {
+            const x = cameraDistance * Math.sin(cameraAngleX) * Math.cos(cameraAngleY);
+            const y = cameraDistance * Math.sin(cameraAngleY);
+            const z = cameraDistance * Math.cos(cameraAngleX) * Math.cos(cameraAngleY);
+            
+            camera.position.set(x + cameraTarget.x, y + cameraTarget.y + 5, z + cameraTarget.z);
+            camera.lookAt(cameraTarget.x, cameraTarget.y, cameraTarget.z);
+        }
+
+        function setupCameraControls() {
+            const canvas = renderer.domElement;
+            
+            // Mouse eventi
+            canvas.addEventListener('mousedown', onMouseDown);
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mouseup', onMouseUp);
+            canvas.addEventListener('click', onCanvasClick);
+            canvas.addEventListener('wheel', onMouseWheel, { passive: false });
+            
+            // Touch eventi per mobile
+            canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+            canvas.addEventListener('touchend', onTouchEnd);
+            
+            // Mouse hover per evidenziare unicorni
+            canvas.addEventListener('mousemove', onCanvasHover);
+            
+            // Previeni menu contestuale
+            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+            
+            // Double-click per tornare alla vista generale
+            canvas.addEventListener('dblclick', () => {
+                console.log('🔄 Returning to overview');
+                animateCameraTo({ x: 0, y: 0, z: 0 }, 50);
+            });
+        }
+
+        function onMouseDown(event) {
+            if (event.target.closest('#modal') || event.target.closest('#buyButton')) return;
+            
+            isMouseDown = true;
+            lastMouseX = event.clientX;
+            lastMouseY = event.clientY;
+        }
+
+        function onMouseMove(event) {
+            if (!isMouseDown) return;
+            
+            const deltaX = event.clientX - lastMouseX;
+            const deltaY = event.clientY - lastMouseY;
+            
+            cameraAngleX += deltaX * 0.01;
+            cameraAngleY += deltaY * 0.01;
+            
+            // Limita rotazione verticale
+            cameraAngleY = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, cameraAngleY));
+            
+            updateCameraPosition();
+            
+            lastMouseX = event.clientX;
+            lastMouseY = event.clientY;
+        }
+
+        function onMouseUp() {
+            isMouseDown = false;
+        }
+
+        function onMouseWheel(event) {
+            event.preventDefault();
+            
+            cameraDistance += event.deltaY * 0.05; // Zoom più veloce per spazi grandi
+            cameraDistance = Math.max(10, Math.min(1000, cameraDistance)); // Range molto più ampio
+            
+            updateCameraPosition();
+        }
+
+        function onTouchStart(event) {
+            if (event.touches.length === 2) {
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                lastTouchDistance = Math.sqrt(
+                    Math.pow(touch2.clientX - touch1.clientX, 2) +
+                    Math.pow(touch2.clientY - touch1.clientY, 2)
+                );
+            } else if (event.touches.length === 1) {
+                lastMouseX = event.touches[0].clientX;
+                lastMouseY = event.touches[0].clientY;
+                isMouseDown = true;
+            }
+        }
+
+        function onTouchMove(event) {
+            event.preventDefault();
+            
+            if (event.touches.length === 2) {
+                // Pinch to zoom
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                const distance = Math.sqrt(
+                    Math.pow(touch2.clientX - touch1.clientX, 2) +
+                    Math.pow(touch2.clientY - touch1.clientY, 2)
+                );
+                
+                if (lastTouchDistance > 0) {
+                    const delta = distance - lastTouchDistance;
+                    cameraDistance -= delta * 0.1; // Zoom touch più veloce
+                    cameraDistance = Math.max(10, Math.min(1000, cameraDistance)); // Range ampio
+                    updateCameraPosition();
+                }
+                
+                lastTouchDistance = distance;
+            } else if (event.touches.length === 1 && isMouseDown) {
+                // Rotazione
+                const deltaX = event.touches[0].clientX - lastMouseX;
+                const deltaY = event.touches[0].clientY - lastMouseY;
+                
+                cameraAngleX += deltaX * 0.01;
+                cameraAngleY += deltaY * 0.01;
+                
+                cameraAngleY = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, cameraAngleY));
+                
+                updateCameraPosition();
+                
+                lastMouseX = event.touches[0].clientX;
+                lastMouseY = event.touches[0].clientY;
+            }
+        }
+
+        function onTouchEnd() {
+            isMouseDown = false;
+            lastTouchDistance = 0;
+        }
+
+        function onCanvasClick(event) {
+            // Evita click durante il drag
+            if (isMouseDown) return;
+            
+            // Evita click su UI elements
+            if (event.target.closest('#modal') || event.target.closest('#buyButton')) return;
+            
+            // Raycasting per trovare unicorni
+            const mouse = new THREE.Vector2();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Crea array di tutti gli oggetti unicorno
+            const unicornObjects = [];
+            
+            // Aggiungi unicorno principale
+            mainUnicorn.children.forEach(child => {
+                if (child.type === 'Mesh') {
+                    unicornObjects.push({
+                        object: child,
+                        unicornData: { name: 'Demo Unicorn', position: mainUnicorn.position, isMain: true }
+                    });
+                }
+            });
+            
+            // Aggiungi unicorni acquistati
+            ownedUnicorns.forEach(unicornData => {
+                unicornData.group.children.forEach(child => {
+                    if (child.type === 'Mesh') {
+                        unicornObjects.push({
+                            object: child,
+                            unicornData: unicornData
+                        });
+                    }
+                });
+            });
+            
+            // Controlla intersezioni
+            const intersects = raycaster.intersectObjects(unicornObjects.map(u => u.object));
+            
+            if (intersects.length > 0) {
+                // Trova l'unicorno cliccato
+                const clickedObject = intersects[0].object;
+                const unicornInfo = unicornObjects.find(u => u.object === clickedObject);
+                
+                if (unicornInfo) {
+                    zoomToUnicorn(unicornInfo.unicornData);
+                }
+            }
+        }
+
+        function zoomToUnicorn(unicornData) {
+            console.log(`🎯 Zooming to unicorn: ${unicornData.name}`);
+            
+            // Calcola la posizione target
+            let targetPosition;
+            if (unicornData.isMain) {
+                targetPosition = {
+                    x: mainUnicorn.position.x,
+                    y: mainUnicorn.position.y,
+                    z: mainUnicorn.position.z
+                };
+            } else {
+                targetPosition = {
+                    x: unicornData.position.x,
+                    y: unicornData.position.y,
+                    z: unicornData.position.z
+                };
+            }
+            
+            // Anima la camera verso l'unicorno
+            animateCameraTo(targetPosition, 15); // Zoom a 15 unità di distanza
+            
+            // Solo zoom, nessun popup
+            console.log(`🎯 Focused on: ${unicornData.name} (${unicornData.colorIndex !== undefined ? colorNames[unicornData.colorIndex] : 'Pink'})`);
+        }
+
+        function animateCameraTo(targetPos, distance = 20) {
+            isAnimatingCamera = true;
+            const startTarget = { ...cameraTarget };
+            const startDistance = cameraDistance;
+            const startTime = Date.now();
+            const duration = 2000; // 2 secondi
+            
+            function animateStep() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function (ease-in-out)
+                const easeProgress = progress < 0.5 
+                    ? 2 * progress * progress 
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                
+                // Interpola target
+                cameraTarget.x = startTarget.x + (targetPos.x - startTarget.x) * easeProgress;
+                cameraTarget.y = startTarget.y + (targetPos.y - startTarget.y) * easeProgress;
+                cameraTarget.z = startTarget.z + (targetPos.z - startTarget.z) * easeProgress;
+                
+                // Interpola distanza
+                cameraDistance = startDistance + (distance - startDistance) * easeProgress;
+                
+                updateCameraPosition();
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateStep);
+                } else {
+                    isAnimatingCamera = false;
+                }
+            }
+            
+            animateStep();
+        }
+
+        function onCanvasHover(event) {
+            // Solo se non stiamo draggando o animando
+            if (isMouseDown || isAnimatingCamera) return;
+            
+            const mouse = new THREE.Vector2();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Crea array di tutti gli oggetti unicorno
+            const unicornObjects = [];
+            
+            // Aggiungi unicorno principale
+            mainUnicorn.children.forEach(child => {
+                if (child.type === 'Mesh') {
+                    unicornObjects.push(child);
+                }
+            });
+            
+            // Aggiungi unicorni acquistati
+            ownedUnicorns.forEach(unicornData => {
+                unicornData.group.children.forEach(child => {
+                    if (child.type === 'Mesh') {
+                        unicornObjects.push(child);
+                    }
+                });
+            });
+            
+            // Controlla intersezioni
+            const intersects = raycaster.intersectObjects(unicornObjects);
+            
+            // Cambia cursore
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+            } else {
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        async function setupStripe() {
+            try {
+                // Get configuration from server
+                const response = await fetch('/config');
+                const config = await response.json();
+                
+                // Initialize Stripe with publishable key from env
+                stripe = Stripe(config.publishable_key);
+                elements = stripe.elements();
+                
+                // Store price for later use
+                unicornPrice = config.unicorn_price;
+                
+                // Update button text with actual price
+                document.getElementById('submit-payment').textContent = `BUY FOR $${(unicornPrice / 100).toFixed(2)}`;
+                
+                // Crea il card element
+                cardElement = elements.create('card', {
+                    style: {
+                        base: {
+                            fontSize: '16px',
+                            color: '#ffffff',
+                            '::placeholder': {
+                                color: '#aab7c4',
+                            },
+                        },
+                    },
+                });
+                
+                console.log('Stripe initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize Stripe:', error);
+            }
+        }
+
+        function changeQuantity(colorIndex, change) {
+            // Nessun limite massimo, solo minimo 0
+            colorQuantities[colorIndex] = Math.max(0, colorQuantities[colorIndex] + change);
+            document.getElementById(`qty-${colorIndex}`).textContent = colorQuantities[colorIndex];
+            
+            // Aggiorna il bottone di pagamento
+            updatePaymentButton();
+            
+            // Disabilita il bottone - se la quantità è 0
+            const minusBtn = document.querySelector(`[onclick="changeQuantity(${colorIndex}, -1)"]`);
+            minusBtn.disabled = colorQuantities[colorIndex] === 0;
+        }
+
+        function updatePaymentButton() {
+            const totalUnicorns = colorQuantities.reduce((sum, qty) => sum + qty, 0);
+            const totalPrice = totalUnicorns * (unicornPrice / 100);
+            const submitButton = document.getElementById('submit-payment');
+            
+            if (totalUnicorns === 0) {
+                submitButton.textContent = 'SELECT UNICORNS';
+                submitButton.disabled = true;
+            } else {
+                // Formato compatto per numeri grandi
+                let unicornText, priceText;
+                
+                if (totalUnicorns >= 1000000) {
+                    unicornText = (totalUnicorns / 1000000).toFixed(1) + 'M';
+                } else if (totalUnicorns >= 1000) {
+                    unicornText = (totalUnicorns / 1000).toFixed(1) + 'K';
+                } else {
+                    unicornText = totalUnicorns.toString();
+                }
+                
+                if (totalPrice >= 1000) {
+                    priceText = '$' + (totalPrice / 1000).toFixed(1) + 'K';
+                } else {
+                    priceText = '$' + totalPrice.toFixed(2);
+                }
+                
+                submitButton.textContent = `BUY ${unicornText} FOR ${priceText}`;
+                submitButton.disabled = false;
+                
+                // Cambia colore del bottone per ordini grandi
+                if (totalUnicorns >= 1000) {
+                    submitButton.style.background = 'linear-gradient(45deg, #ffd700, #ff8c00)'; // Gold
+                } else if (totalUnicorns >= 100) {
+                    submitButton.style.background = 'linear-gradient(45deg, #ff69b4, #ff1493)'; // Pink
+                } else {
+                    submitButton.style.background = 'linear-gradient(45deg, #ff69b4, #ff1493)'; // Default pink
+                }
+            }
+        }
+
+        function resetQuantities() {
+            colorQuantities = new Array(12).fill(0);
+            for (let i = 0; i < 12; i++) {
+                document.getElementById(`qty-${i}`).textContent = '0';
+                const minusBtn = document.querySelector(`[onclick="changeQuantity(${i}, -1)"]`);
+                if (minusBtn) minusBtn.disabled = true;
+            }
+            updatePaymentButton();
+        }
+
+        function setupUI() {
+            // Bottone acquisto
+            document.getElementById('buyButton').addEventListener('click', openModal);
+            
+            // Chiusura modal
+            document.getElementById('modal').addEventListener('click', (e) => {
+                if (e.target.id === 'modal') closeModal();
+            });
+            
+            // Bottone pagamento
+            document.getElementById('submit-payment').addEventListener('click', handlePayment);
+            
+            // Controlli navigazione
+            setupNavigationControls();
+            
+            // Inizializza stato bottoni
+            updatePaymentButton();
+        }
+
+        function setupNavigationControls() {
+            // Controlli touch per mobile (hold continuo)
+            setupTouchControls();
+            
+            // Controlli tastiera per desktop
+            setupKeyboardControls();
+        }
+
+        function setupTouchControls() {
+            const buttons = [
+                { id: 'nav-up', key: 'up' },
+                { id: 'nav-down', key: 'down' },
+                { id: 'nav-left', key: 'left' },
+                { id: 'nav-right', key: 'right' },
+                { id: 'nav-forward', key: 'forward' },
+                { id: 'nav-backward', key: 'backward' }
+            ];
+
+            buttons.forEach(({ id, key }) => {
+                const button = document.getElementById(id);
+                
+                // Touch start - inizia movimento
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    movementKeys[key] = true;
+                    button.classList.add('pressed');
+                });
+                
+                // Touch end - ferma movimento
+                button.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    movementKeys[key] = false;
+                    button.classList.remove('pressed');
+                });
+                
+                // Mouse per desktop (se controlli visibili)
+                button.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    movementKeys[key] = true;
+                    button.classList.add('pressed');
+                });
+                
+                button.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    movementKeys[key] = false;
+                    button.classList.remove('pressed');
+                });
+                
+                button.addEventListener('mouseleave', (e) => {
+                    movementKeys[key] = false;
+                    button.classList.remove('pressed');
+                });
+            });
+
+            // Bottone centro
+            document.getElementById('nav-center').addEventListener('click', () => {
+                animateCameraTo({ x: 0, y: 0, z: 0 }, 50);
+            });
+        }
+
+        function setupKeyboardControls() {
+            // Keydown - inizia movimento
+            document.addEventListener('keydown', (event) => {
+                if (document.activeElement.tagName === 'INPUT') return;
+                
+                switch(event.key.toLowerCase()) {
+                    case 'w':
+                    case 'arrowup':
+                        movementKeys.up = true;
+                        event.preventDefault();
+                        break;
+                    case 's':
+                    case 'arrowdown':
+                        movementKeys.down = true;
+                        event.preventDefault();
+                        break;
+                    case 'a':
+                    case 'arrowleft':
+                        movementKeys.left = true;
+                        event.preventDefault();
+                        break;
+                    case 'd':
+                    case 'arrowright':
+                        movementKeys.right = true;
+                        event.preventDefault();
+                        break;
+                    case 'q':
+                        movementKeys.forward = true;
+                        event.preventDefault();
+                        break;
+                    case 'e':
+                        movementKeys.backward = true;
+                        event.preventDefault();
+                        break;
+                    case ' ':
+                        animateCameraTo({ x: 0, y: 0, z: 0 }, 50);
+                        event.preventDefault();
+                        break;
+                }
+            });
+            
+            // Keyup - ferma movimento
+            document.addEventListener('keyup', (event) => {
+                switch(event.key.toLowerCase()) {
+                    case 'w':
+                    case 'arrowup':
+                        movementKeys.up = false;
+                        break;
+                    case 's':
+                    case 'arrowdown':
+                        movementKeys.down = false;
+                        break;
+                    case 'a':
+                    case 'arrowleft':
+                        movementKeys.left = false;
+                        break;
+                    case 'd':
+                    case 'arrowright':
+                        movementKeys.right = false;
+                        break;
+                    case 'q':
+                        movementKeys.forward = false;
+                        break;
+                    case 'e':
+                        movementKeys.backward = false;
+                        break;
+                }
+            });
+        }
+
+        function updateMovement() {
+            // Movimento continuo basato sui tasti premuti
+            if (movementKeys.up) cameraTarget.y += movementSpeed;
+            if (movementKeys.down) cameraTarget.y -= movementSpeed;
+            if (movementKeys.left) cameraTarget.x -= movementSpeed;
+            if (movementKeys.right) cameraTarget.x += movementSpeed;
+            if (movementKeys.forward) cameraTarget.z += movementSpeed;
+            if (movementKeys.backward) cameraTarget.z -= movementSpeed;
+            
+            // Aggiorna posizione camera solo se c'è movimento
+            const isMoving = Object.values(movementKeys).some(key => key);
+            if (isMoving) {
+                updateCameraPosition();
+            }
+        }
+
+        function openModal() {
+            document.getElementById('modal').style.display = 'flex';
+            document.getElementById('unicornName').value = `Unicorn${unicornCounter + 1}`;
+            document.getElementById('unicornName').focus();
+            
+            // Mount Stripe card element
+            if (cardElement && !document.querySelector('#card-element iframe')) {
+                cardElement.mount('#card-element');
+                
+                // Handle real-time validation errors from the card Element
+                cardElement.on('change', ({error}) => {
+                    const displayError = document.getElementById('card-errors');
+                    if (error) {
+                        displayError.textContent = error.message;
+                    } else {
+                        displayError.textContent = '';
+                    }
+                });
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+            resetQuantities();
+        }
+
+        async function handlePayment() {
+            const baseName = document.getElementById('unicornName').value.trim();
+            if (!baseName) {
+                alert('Please enter a base name for your unicorns!');
+                return;
+            }
+            
+            const totalUnicorns = colorQuantities.reduce((sum, qty) => sum + qty, 0);
+            if (totalUnicorns === 0) {
+                alert('Please select at least one unicorn!');
+                return;
+            }
+            
+            // Avviso per ordini molto grandi
+            if (totalUnicorns >= 10000) {
+                const confirmed = confirm(`⚠️ Large Order Warning!\n\nYou're about to purchase ${totalUnicorns.toLocaleString()} unicorns for $${(totalUnicorns * 0.25).toFixed(2)}.\n\nThis will create a massive unicorn galaxy!\nAre you sure you want to proceed?`);
+                if (!confirmed) return;
+            } else if (totalUnicorns >= 1000) {
+                const confirmed = confirm(`🦄 Big Order!\n\nYou're purchasing ${totalUnicorns.toLocaleString()} unicorns.\nThis will create an amazing unicorn herd!\n\nContinue?`);
+                if (!confirmed) return;
+            }
+            
+            const submitButton = document.getElementById('submit-payment');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Processing...';
+            
+            try {
+                // Prepara i dati per il pagamento
+                const unicornOrders = [];
+                colorQuantities.forEach((qty, colorIndex) => {
+                    if (qty > 0) {
+                        unicornOrders.push({
+                            color: colorNames[colorIndex],
+                            quantity: qty
+                        });
+                    }
+                });
+                
+                const totalAmount = totalUnicorns * unicornPrice;
+                
+                // Crea Payment Intent sul server
+                const response = await fetch('/create-payment-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': userSessionId
+                    },
+                    body: JSON.stringify({
+                        base_name: baseName,
+                        unicorn_orders: unicornOrders,
+                        total_unicorns: totalUnicorns,
+                        total_amount: totalAmount,
+                        user_session: userSessionId
+                    }),
+                });
+                
+                const { client_secret } = await response.json();
+                
+                // Conferma il pagamento
+                const result = await stripe.confirmCardPayment(client_secret, {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            name: 'Unicorn Buyer',
+                        },
+                    }
+                });
+                
+                if (result.error) {
+                    // Mostra errore
+                    document.getElementById('card-errors').textContent = result.error.message;
+                } else {
+                    // Pagamento riuscito! Crea tutti gli unicorni
+                    colorQuantities.forEach((qty, colorIndex) => {
+                        for (let i = 0; i < qty; i++) {
+                            const unicornName = qty > 1 ? `${baseName} ${i + 1}` : baseName;
+                            createCustomUnicorn(unicornName, colorIndex);
+                        }
+                    });
+                    
+                    closeModal();
+                    
+                    const priceDisplay = `$${(totalAmount / 100).toFixed(2)}`;
+                    alert(`Success! You purchased ${totalUnicorns} unicorn${totalUnicorns > 1 ? 's' : ''} for ${priceDisplay}!
+
+Your unicorns are now in space waiting for you!`);
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                document.getElementById('card-errors').textContent = 'Payment failed. Please try again.';
+            }
+            
+            submitButton.disabled = false;
+            updatePaymentButton();
+        }
+
+
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+            
+            // Aggiorna movimento continuo
+            updateMovement();
+            
+            // Animazione unicorno principale - fluttuazione al centro
+            const floatAmplitude = 2;
+            
+            // Fluttuazione dolce al centro
+            mainUnicorn.position.x = Math.sin(time * 0.5) * floatAmplitude;
+            mainUnicorn.position.y = Math.sin(time * 0.7) * floatAmplitude;
+            mainUnicorn.position.z = Math.cos(time * 0.6) * floatAmplitude;
+            
+            // Rotazione dolce
+            mainUnicorn.rotation.y = Math.sin(time * 0.3) * 0.4;
+            mainUnicorn.rotation.z = Math.sin(time * 0.4) * 0.1;
+            mainUnicorn.rotation.x = Math.sin(time * 0.2) * 0.05;
+            
+            // Animazione ali unicorno principale
+            if (mainUnicorn.children[3] && mainUnicorn.children[4]) {
+                const wingSpeed = 4; // Battito dolce
+                mainUnicorn.children[3].rotation.z = -Math.PI / 4 + Math.sin(time * wingSpeed) * 0.2;
+                mainUnicorn.children[4].rotation.z = Math.PI / 4 - Math.sin(time * wingSpeed) * 0.2;
+            }
+            
+            // Nametag unicorno principale guarda la camera
+            const mainNameTag = mainUnicorn.children[mainUnicorn.children.length - 1];
+            if (mainNameTag) {
+                mainNameTag.lookAt(camera.position);
+            }
+            
+            // Animazione unicorni acquistati - fluttuazione sul posto
+            ownedUnicorns.forEach((unicornData, index) => {
+                const unicornGroup = unicornData.group;
+                const basePos = unicornData.position;
+                
+                // Fluttuazione dolce attorno alla posizione base
+                const timeOffset = index * 0.7; // Offset per variazione
+                const floatAmplitude = 1.5; // Ampiezza fluttuazione ridotta
+                
+                // Movimento fluttuante molto dolce
+                const floatX = Math.sin(time * 0.6 + timeOffset) * floatAmplitude;
+                const floatY = Math.sin(time * 0.8 + timeOffset * 1.2) * floatAmplitude;
+                const floatZ = Math.cos(time * 0.7 + timeOffset * 0.8) * floatAmplitude;
+                
+                unicornGroup.position.x = basePos.x + floatX;
+                unicornGroup.position.y = basePos.y + floatY;
+                unicornGroup.position.z = basePos.z + floatZ;
+                
+                // Rotazione molto dolce
+                unicornGroup.rotation.y = unicornData.initialRotation + Math.sin(time * 0.3 + timeOffset) * 0.3;
+                unicornGroup.rotation.z = Math.sin(time * 0.4 + timeOffset) * 0.1;
+                unicornGroup.rotation.x = Math.sin(time * 0.2 + timeOffset) * 0.05;
+                
+                // Animazione ali - battito dolce
+                if (unicornGroup.children[3] && unicornGroup.children[4]) {
+                    const wingSpeed = 4; // Battito più lento
+                    unicornGroup.children[3].rotation.z = -Math.PI / 4 + Math.sin(time * wingSpeed + timeOffset) * 0.2;
+                    unicornGroup.children[4].rotation.z = Math.PI / 4 - Math.sin(time * wingSpeed + timeOffset) * 0.2;
+                }
+                
+                // Nametag guarda sempre la camera
+                const nameTag = unicornGroup.children[unicornGroup.children.length - 1];
+                if (nameTag) {
+                    nameTag.lookAt(camera.position);
+                }
+            });
+            
+            // Animazione stelle
+            stars.forEach(star => {
+                star.rotation.x += 0.001;
+                star.rotation.y += 0.001;
+            });
+            
+            // Animazione particelle
+            particles.forEach(particle => {
+                particle.position.add(particle.userData.velocity);
+                particle.userData.life--;
+                
+                if (particle.userData.life <= 0) {
+                    particle.position.copy(mainUnicorn.position);
+                    particle.position.add(new THREE.Vector3(
+                        (Math.random() - 0.5) * 4,
+                        (Math.random() - 0.5) * 4,
+                        (Math.random() - 0.5) * 4
+                    ));
+                    particle.userData.life = 100;
+                    particle.material.color.setHSL(Math.random(), 1, 0.8);
+                }
+                
+                particle.material.opacity = particle.userData.life / 100;
+            });
+            
+            renderer.render(scene, camera);
+        }
+
+        // Inizializza tutto quando la pagina è carica
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
